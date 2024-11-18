@@ -1,0 +1,99 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import accuracy_score, classification_report
+
+class Modelo:
+    def _init_(self):
+        self.df = None
+        self.X_train, self.X_test, self.y_train, self.y_test = None, None, None, None
+        self.model = None
+
+    def CarregarDataset(self, path):
+        """
+        Carrega o conjunto de dados a partir de um arquivo CSV.
+        """
+        names = ['SepalLengthCm', 'SepalWidthCm', 'PetalLengthCm', 'PetalWidthCm', 'Species']
+        self.df = pd.read_csv(path, names=names)
+        print("Dataset carregado com sucesso!")
+        print(self.df.head())  # Exibe as primeiras linhas para visualização
+
+    def TratamentoDeDados(self):
+        """
+        Realiza o pré-processamento dos dados carregados.
+        """
+        # Verifica valores ausentes
+        print("Verificando valores nulos...")
+        print(self.df.isnull().sum())
+
+        # Remove valores ausentes (se houver)
+        self.df.dropna(inplace=True)
+
+        # Transforma a coluna 'Species' em valores numéricos
+        self.df['Species'] = self.df['Species'].astype('category').cat.codes
+
+        # Separação de features (X) e target (y)
+        self.X = self.df.iloc[:, :-1].values  # Todas as colunas menos a última
+        self.y = self.df.iloc[:, -1].values  # Apenas a última coluna (Species)
+        print("Dados tratados com sucesso!")
+
+    def Treinamento(self, modelo="SVM"):
+        """
+        Treina o modelo de machine learning.
+        """
+        # Divide os dados em treinamento e teste
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+            self.X, self.y, test_size=0.2, random_state=42
+        )
+        print("Dados divididos em treinamento e teste!")
+
+        # Escolhe o modelo de machine learning
+        if modelo == "SVM":
+            self.model = SVC(kernel='linear', random_state=42)
+        elif modelo == "Regressao":
+            self.model = LinearRegression()
+        else:
+            raise ValueError("Modelo desconhecido. Escolha entre 'SVM' ou 'Regressao'.")
+
+        # Treina o modelo
+        self.model.fit(self.X_train, self.y_train)
+        print(f"Modelo {modelo} treinado com sucesso!")
+
+    def Teste(self):
+        """
+        Avalia o desempenho do modelo treinado nos dados de teste.
+        """
+        y_pred = self.model.predict(self.X_test)
+
+        if isinstance(self.model, SVC):  # Caso seja classificação
+            acc = accuracy_score(self.y_test, y_pred)
+            print(f"Acurácia do modelo: {acc * 100:.2f}%")
+            print("Relatório de classificação:")
+            print(classification_report(self.y_test, y_pred))
+        elif isinstance(self.model, LinearRegression):  # Caso seja regressão
+            print("Resultados do modelo de regressão linear (apenas valores previstos):")
+            print(y_pred[:10])  # Exibe os 10 primeiros valores previstos
+
+    def Train(self, path="iris.data", modelo="SVM"):
+        """
+        Função principal para o fluxo de treinamento do modelo.
+        """
+        self.CarregarDataset(path)
+        self.TratamentoDeDados()
+        self.Treinamento(modelo)
+        self.Teste()
+
+# Executando o código
+if _name_ == "_main_":
+    # Instancia o modelo
+    modelo = Modelo()
+
+    # Caminho do dataset (ajuste conforme necessário)
+    dataset_path = "iris.data"  # Substitua pelo caminho do arquivo
+
+    # Escolha entre "SVM" e "Regressao"
+    modelo_escolhido = "SVM"  # Alterar para "Regressao" se preferir
+
+    # Executa o pipeline
+    modelo.Train(path=dataset_path, modelo=modelo_escolhido)
